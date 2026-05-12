@@ -1,5 +1,19 @@
 import { useEffect, useState } from 'react';
-import type { DragEvent } from 'react';
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import { useAuth } from '../hooks/useAuth';
 import { useLinks } from '../hooks/useLinks';
 import type { LinkEntry } from '../lib/links';
@@ -14,8 +28,17 @@ export function Home() {
   const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [target, setTarget] = useState<EditTarget | null>(null);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [overId, setOverId] = useState<string | null>(null);
+
+  // Activation constraints keep clicks/taps on the tile and delete buttons
+  // working normally — a drag only starts after a short hold or a few
+  // pixels of movement, so accidental drags from a tap don't fire.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -42,34 +65,11 @@ export function Home() {
 
   const removeTile = (link: LinkEntry) => removeLink(link.id);
 
-  const handleDragStart = (e: DragEvent<HTMLDivElement>, link: LinkEntry) => {
-    setDragId(link.id);
-    e.dataTransfer.effectAllowed = 'move';
-    // Required for Firefox to start the drag.
-    e.dataTransfer.setData('text/plain', link.id);
-  };
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>, link: LinkEntry) => {
-    if (dragId === null) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (overId !== link.id) setOverId(link.id);
-  };
-
-  const handleDragLeave = (_e: DragEvent<HTMLDivElement>, link: LinkEntry) => {
-    if (overId === link.id) setOverId(null);
-  };
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>, link: LinkEntry) => {
-    e.preventDefault();
-    if (dragId && dragId !== link.id) reorderLink(dragId, link.id);
-    setDragId(null);
-    setOverId(null);
-  };
-
-  const handleDragEnd = () => {
-    setDragId(null);
-    setOverId(null);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      reorderLink(String(active.id), String(over.id));
+    }
   };
 
   return (
@@ -87,32 +87,36 @@ export function Home() {
         </button>
       </header>
 
-      <div className="home__grid" data-testid="link-grid">
-        {links.map((link) => (
-          <LinkTile
-            key={link.id}
-            link={link}
-            editing={editing}
-            onEdit={(l) => setTarget({ kind: 'edit', link: l })}
-            onRemove={removeTile}
-            dragging={dragId === link.id}
-            dragOver={overId === link.id && dragId !== null && dragId !== link.id}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onDragEnd={handleDragEnd}
-          />
-        ))}
-        <button
-          type="button"
-          className="home__add"
-          onClick={() => setTarget({ kind: 'add' })}
-          aria-label="Add link"
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={links.map((l) => l.id)}
+          strategy={rectSortingStrategy}
         >
-          +
-        </button>
-      </div>
+          <div className="home__grid" data-testid="link-grid">
+            {links.map((link) => (
+              <LinkTile
+                key={link.id}
+                link={link}
+                editing={editing}
+                onEdit={(l) => setTarget({ kind: 'edit', link: l })}
+                onRemove={removeTile}
+              />
+            ))}
+            <button
+              type="button"
+              className="home__add"
+              onClick={() => setTarget({ kind: 'add' })}
+              aria-label="Add link"
+            >
+              +
+            </button>
+          </div>
+        </SortableContext>
+      </DndContext>
 
       <EditLinkDialog
         target={target}
