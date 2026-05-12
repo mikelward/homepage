@@ -89,9 +89,6 @@
 
 .link-tile--editing {
   cursor: grab;
-  /* Prevent the browser from intercepting touches as scroll gestures so
-     the TouchSensor can take over after the activation delay. */
-  touch-action: none;
 }
 
 .link-tile--editing:active {
