@@ -7,6 +7,8 @@
   box-shadow: var(--shadow-elev);
   max-width: min(420px, calc(100vw - 24px));
   width: 100%;
+  margin: auto;
+  inset: 0;
 }
 
 .edit-dialog::backdrop {
