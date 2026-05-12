@@ -1,0 +1,22 @@
+.signin {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+@media (hover: hover) {
+  .signin:hover {
+    border-color: var(--accent);
+  }
+}
+
+.signin:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

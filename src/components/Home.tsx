@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { useLinks } from '../hooks/useLinks';
 import type { LinkEntry } from '../lib/links';
+import { startSync } from '../lib/sync';
 import { EditLinkDialog, type EditTarget } from './EditLinkDialog';
 import { LinkTile } from './LinkTile';
+import { SignInButton } from './SignInButton';
 import './Home.css';
 
 export function Home() {
   const { links, addLink, updateLink, removeLink } = useLinks();
+  const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [target, setTarget] = useState<EditTarget | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    return startSync(user.uid);
+  }, [user]);
 
   const closeDialog = () => setTarget(null);
 
@@ -34,6 +43,7 @@ export function Home() {
     <main className="home">
       <header className="home__header">
         <h1 className="visually-hidden">homepage</h1>
+        <SignInButton />
         <button
           type="button"
           className="home__edit-toggle"
