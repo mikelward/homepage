@@ -1,0 +1,117 @@
+.edit-dialog {
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: var(--shadow-elev);
+  max-width: min(420px, calc(100vw - 24px));
+  width: 100%;
+}
+
+.edit-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.edit-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+}
+
+.edit-dialog__title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.edit-dialog__label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.edit-dialog__hint {
+  font-weight: 400;
+}
+
+.edit-dialog input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 16px;
+  background: var(--bg);
+}
+
+.edit-dialog input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.edit-dialog__error {
+  color: var(--danger);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.edit-dialog__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.edit-dialog__actions button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.edit-dialog__actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (hover: hover) {
+  .edit-dialog__actions button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+.edit-dialog__actions button:active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.edit-dialog__spacer {
+  flex: 1;
+}
+
+.edit-dialog__primary {
+  background: var(--accent) !important;
+  color: #ffffff !important;
+  border-color: var(--accent) !important;
+}
+
+.edit-dialog__primary:active {
+  background: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+}
+
+.edit-dialog__danger {
+  color: var(--danger) !important;
+  border-color: var(--danger) !important;
+}
+
+.edit-dialog__danger:active {
+  background: var(--danger) !important;
+  color: #ffffff !important;
+}

@@ -1,0 +1,88 @@
+.link-tile {
+  position: relative;
+  /* Container itself never receives the touch — the inner anchor/button
+     covers it, so no tap target is lost. */
+}
+
+.link-tile__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 8px;
+  background: var(--tile-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--fg);
+  font-size: 13px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 100ms ease-out, box-shadow 100ms ease-out;
+}
+
+.link-tile__body img,
+.link-tile__body svg {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.link-tile__label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg);
+}
+
+/* Sticky :hover on touch devices leaves the hovered style painted after a
+   tap until the user taps elsewhere. Gating :hover behind hover: hover
+   means it only fires on devices with a real pointer; :active stays
+   outside so the pressed-state still flashes on touch. */
+@media (hover: hover) {
+  .link-tile__body:hover {
+    box-shadow: var(--shadow-elev);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+.link-tile__body:active {
+  transform: scale(0.97);
+  background: var(--tile-bg-active);
+  color: var(--tile-fg-active);
+  border-color: var(--accent);
+}
+
+.link-tile__body:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.link-tile__remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #ffffff;
+  font-size: 20px;
+  line-height: 1;
+  box-shadow: var(--shadow-elev);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.link-tile__remove:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}

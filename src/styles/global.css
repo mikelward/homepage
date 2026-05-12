@@ -1,0 +1,37 @@
+:root {
+  --bg: #ffffff;
+  --fg: #111111;
+  --muted: #666666;
+  --accent: #0066cc;
+  --accent-hover: #004999;
+  --border: #e5e5e5;
+  --tile-bg: #ffffff;
+  --tile-bg-active: #0066cc;
+  --tile-fg-active: #ffffff;
+  --danger: #b00020;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-elev: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+/* TODO: dark theme + user-configurable palette. Reserve a `[data-theme="dark"]`
+   override block here so the theme picker can flip values at runtime without
+   touching component CSS. */
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  /* Respect the iOS notch / Android gesture insets so tiles aren't tucked
+     under the status bar when launched as a standalone PWA. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+#root {
+  min-height: 100vh;
+}
