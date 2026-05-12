@@ -86,3 +86,21 @@
   outline: 2px solid var(--fg);
   outline-offset: 2px;
 }
+
+.link-tile--editing {
+  cursor: grab;
+}
+
+.link-tile--editing:active {
+  cursor: grabbing;
+}
+
+.link-tile--dragging {
+  opacity: 0.4;
+}
+
+.link-tile--drag-over .link-tile__body {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-elev);
+  transform: scale(1.03);
+}
