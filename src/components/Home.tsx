@@ -4,6 +4,7 @@ import { useLinks } from '../hooks/useLinks';
 import type { LinkEntry } from '../lib/links';
 import { startSync } from '../lib/sync';
 import { EditLinkDialog, type EditTarget } from './EditLinkDialog';
+import { InstallButton } from './InstallButton';
 import { LinkTile } from './LinkTile';
 import { SignInButton } from './SignInButton';
 import './Home.css';
@@ -43,6 +44,7 @@ export function Home() {
     <main className="home">
       <header className="home__header">
         <h1 className="visually-hidden">homepage</h1>
+        <InstallButton />
         <SignInButton />
         <button
           type="button"

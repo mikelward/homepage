@@ -1,0 +1,23 @@
+.install {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+@media (hover: hover) {
+  .install:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+}
+
+.install:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
