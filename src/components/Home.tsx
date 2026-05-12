@@ -33,7 +33,7 @@ export function Home() {
   return (
     <main className="home">
       <header className="home__header">
-        <h1 className="visually-hidden">home</h1>
+        <h1 className="visually-hidden">homepage</h1>
         <button
           type="button"
           className="home__edit-toggle"

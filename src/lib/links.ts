@@ -4,7 +4,7 @@ export type LinkEntry = {
   url: string;
 };
 
-export const STORAGE_KEY = 'home:links';
+export const STORAGE_KEY = 'homepage:links';
 
 export const DEFAULT_LINKS: LinkEntry[] = [
   { id: 'newshacker', name: 'newshacker', url: 'https://newshacker.app' },
