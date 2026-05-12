@@ -8,7 +8,7 @@ import {
 
 describe('links', () => {
   it('exports a stable storage key', () => {
-    expect(STORAGE_KEY).toBe('home:links');
+    expect(STORAGE_KEY).toBe('homepage:links');
   });
 
   it('seeds with a single newshacker entry', () => {

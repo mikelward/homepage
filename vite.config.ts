@@ -12,8 +12,8 @@ export default defineConfig({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png'],
         manifest: {
-          name: 'home',
-          short_name: 'home',
+          name: 'homepage',
+          short_name: 'homepage',
           description: 'A minimal mobile home page.',
           theme_color: '#ffffff',
           background_color: '#ffffff',
