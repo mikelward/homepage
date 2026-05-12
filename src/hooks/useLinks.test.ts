@@ -60,6 +60,32 @@ describe('useLinks', () => {
     expect(result.current.links).toEqual([]);
   });
 
+  it('reorders a link by moving it to the position of another', () => {
+    const { result } = renderHook(() => useLinks());
+    act(() => {
+      result.current.addLink('B', 'https://b.example');
+      result.current.addLink('C', 'https://c.example');
+    });
+    const [a, b, c] = result.current.links;
+    act(() => {
+      result.current.reorderLink(c.id, a.id);
+    });
+    expect(result.current.links.map((l) => l.id)).toEqual([c.id, a.id, b.id]);
+  });
+
+  it('reorderLink is a no-op when source equals target or id is unknown', () => {
+    const { result } = renderHook(() => useLinks());
+    act(() => {
+      result.current.addLink('B', 'https://b.example');
+    });
+    const before = result.current.links.map((l) => l.id);
+    act(() => {
+      result.current.reorderLink(before[0], before[0]);
+      result.current.reorderLink('does-not-exist', before[0]);
+    });
+    expect(result.current.links.map((l) => l.id)).toEqual(before);
+  });
+
   it('resets to defaults', () => {
     const { result } = renderHook(() => useLinks());
     act(() => {

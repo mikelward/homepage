@@ -1,3 +1,4 @@
+import type { DragEvent } from 'react';
 import type { LinkEntry } from '../lib/links';
 import { LinkIcon } from './LinkIcon';
 import './LinkTile.css';
@@ -7,12 +8,47 @@ type Props = {
   editing: boolean;
   onEdit: (link: LinkEntry) => void;
   onRemove: (link: LinkEntry) => void;
+  dragging?: boolean;
+  dragOver?: boolean;
+  onDragStart?: (e: DragEvent<HTMLDivElement>, link: LinkEntry) => void;
+  onDragOver?: (e: DragEvent<HTMLDivElement>, link: LinkEntry) => void;
+  onDragLeave?: (e: DragEvent<HTMLDivElement>, link: LinkEntry) => void;
+  onDrop?: (e: DragEvent<HTMLDivElement>, link: LinkEntry) => void;
+  onDragEnd?: (e: DragEvent<HTMLDivElement>) => void;
 };
 
-export function LinkTile({ link, editing, onEdit, onRemove }: Props) {
+export function LinkTile({
+  link,
+  editing,
+  onEdit,
+  onRemove,
+  dragging,
+  dragOver,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+}: Props) {
   if (editing) {
+    const className = [
+      'link-tile',
+      'link-tile--editing',
+      dragging ? 'link-tile--dragging' : '',
+      dragOver ? 'link-tile--drag-over' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
     return (
-      <div className="link-tile link-tile--editing">
+      <div
+        className={className}
+        draggable
+        onDragStart={(e) => onDragStart?.(e, link)}
+        onDragOver={(e) => onDragOver?.(e, link)}
+        onDragLeave={(e) => onDragLeave?.(e, link)}
+        onDrop={(e) => onDrop?.(e, link)}
+        onDragEnd={(e) => onDragEnd?.(e)}
+      >
         <button
           type="button"
           className="link-tile__body"

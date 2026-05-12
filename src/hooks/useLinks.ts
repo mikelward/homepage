@@ -104,9 +104,28 @@ export function useLinks() {
     writeStorage(readStorage().filter((l) => l.id !== id));
   }, []);
 
+  const reorderLink = useCallback((fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const current = readStorage();
+    const fromIndex = current.findIndex((l) => l.id === fromId);
+    const toIndex = current.findIndex((l) => l.id === toId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    const next = current.slice();
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    writeStorage(next);
+  }, []);
+
   const resetToDefaults = useCallback(() => {
     writeStorage(DEFAULT_LINKS);
   }, []);
 
-  return { links, addLink, updateLink, removeLink, resetToDefaults };
+  return {
+    links,
+    addLink,
+    updateLink,
+    removeLink,
+    reorderLink,
+    resetToDefaults,
+  };
 }
