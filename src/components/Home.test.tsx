@@ -36,9 +36,13 @@ describe('Home', () => {
     ).toHaveAttribute('href', 'https://newshacker.app');
   });
 
-  it('toggles edit mode and exposes the Add tile + delete buttons', async () => {
+  it('always shows the Add tile and exposes delete buttons in edit mode', async () => {
     const user = userEvent.setup();
     render(<Home />);
+
+    expect(
+      screen.getByRole('button', { name: 'Add link' }),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Edit' }));
     expect(
@@ -50,14 +54,13 @@ describe('Home', () => {
 
     await user.click(screen.getByRole('button', { name: 'Done' }));
     expect(
-      screen.queryByRole('button', { name: 'Add link' }),
-    ).not.toBeInTheDocument();
+      screen.getByRole('button', { name: 'Add link' }),
+    ).toBeInTheDocument();
   });
 
   it('adds a new link via the dialog and persists it', async () => {
     const user = userEvent.setup();
     render(<Home />);
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
     await user.click(screen.getByRole('button', { name: 'Add link' }));
 
     await user.type(
@@ -67,7 +70,6 @@ describe('Home', () => {
     await user.type(screen.getByLabelText(/Name/), 'Codex');
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
-    await user.click(screen.getByRole('button', { name: 'Done' }));
     expect(
       screen.getByRole('link', { name: 'Codex' }),
     ).toHaveAttribute('href', 'https://chatgpt.com/codex/cloud');

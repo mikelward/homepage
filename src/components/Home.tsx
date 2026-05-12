@@ -64,16 +64,14 @@ export function Home() {
             onRemove={removeTile}
           />
         ))}
-        {editing && (
-          <button
-            type="button"
-            className="home__add"
-            onClick={() => setTarget({ kind: 'add' })}
-            aria-label="Add link"
-          >
-            +
-          </button>
-        )}
+        <button
+          type="button"
+          className="home__add"
+          onClick={() => setTarget({ kind: 'add' })}
+          aria-label="Add link"
+        >
+          +
+        </button>
       </div>
 
       <EditLinkDialog
