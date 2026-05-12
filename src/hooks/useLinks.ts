@@ -55,6 +55,26 @@ function subscribe(l: Listener): () => void {
 }
 
 /**
+ * Storage primitives exposed for the sync layer. They bypass React and
+ * notify the same listeners the hook uses, so a remote write lands in the
+ * UI on the next render.
+ */
+export function readLinksStorage(): LinkEntry[] {
+  return readStorage();
+}
+
+export function writeLinksStorage(next: LinkEntry[]): void {
+  writeStorage(next);
+}
+
+export function subscribeLinksStorage(l: Listener): () => void {
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
+}
+
+/**
  * Reset the in-module cache. Tests call this between cases so each one
  * sees a fresh read from localStorage; production code never needs it.
  */
