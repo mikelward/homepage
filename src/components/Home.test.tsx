@@ -75,6 +75,15 @@ describe('Home', () => {
     ).toHaveAttribute('href', 'https://chatgpt.com/codex/cloud');
   });
 
+  it('shows an error and does not save when the URL is invalid', async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+    await user.click(screen.getByRole('button', { name: 'Add link' }));
+    await user.type(screen.getByLabelText('URL'), 'not-a-url');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(screen.getByRole('alert')).toHaveTextContent(/full URL/);
+  });
+
   it('removes a link via the tile delete button', async () => {
     const user = userEvent.setup();
     render(<Home />);

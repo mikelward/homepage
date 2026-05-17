@@ -1,3 +1,5 @@
+import { safeHostname } from './favicon';
+
 export type LinkEntry = {
   id: string;
   name: string;
@@ -31,3 +33,22 @@ export function parseLinks(raw: string | null): LinkEntry[] | null {
     return null;
   }
 }
+
+export type LinkFormResult =
+  | { ok: true; values: { name: string; url: string } }
+  | { ok: false; error: string };
+
+export function validateLinkForm(input: {
+  name: string;
+  url: string;
+}): LinkFormResult {
+  const trimmedUrl = input.url.trim();
+  if (!trimmedUrl) return { ok: false, error: 'URL is required.' };
+  const host = safeHostname(trimmedUrl);
+  if (!host) {
+    return { ok: false, error: 'Enter a full URL, including https://' };
+  }
+  const finalName = input.name.trim() || host;
+  return { ok: true, values: { name: finalName, url: trimmedUrl } };
+}
+
