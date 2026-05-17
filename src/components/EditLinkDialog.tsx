@@ -1,5 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { safeHostname } from '../lib/favicon';
+import { useEffect, useId, useRef } from 'react';
 import type { LinkEntry } from '../lib/links';
 import './EditLinkDialog.css';
 
@@ -9,33 +8,31 @@ export type EditTarget =
 
 type Props = {
   target: EditTarget | null;
+  name: string;
+  url: string;
+  error: string | null;
+  onNameChange: (name: string) => void;
+  onUrlChange: (url: string) => void;
+  onSubmit: () => void;
   onClose: () => void;
-  onSave: (values: { name: string; url: string }) => void;
   onDelete?: () => void;
 };
 
-export function EditLinkDialog({ target, onClose, onSave, onDelete }: Props) {
+export function EditLinkDialog({
+  target,
+  name,
+  url,
+  error,
+  onNameChange,
+  onUrlChange,
+  onSubmit,
+  onClose,
+  onDelete,
+}: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const nameId = useId();
   const urlId = useId();
-  const [name, setName] = useState('');
-  const [url, setUrl] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
-  // Re-seed the form whenever the dialog opens for a different target.
-  useEffect(() => {
-    if (!target) return;
-    if (target.kind === 'edit') {
-      setName(target.link.name);
-      setUrl(target.link.url);
-    } else {
-      setName('');
-      setUrl('');
-    }
-    setError(null);
-  }, [target]);
-
-  // Open/close the native <dialog> when the target changes.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -47,18 +44,7 @@ export function EditLinkDialog({ target, onClose, onSave, onDelete }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedUrl = url.trim();
-    if (!trimmedUrl) {
-      setError('URL is required.');
-      return;
-    }
-    const host = safeHostname(trimmedUrl);
-    if (!host) {
-      setError('Enter a full URL, including https://');
-      return;
-    }
-    const finalName = name.trim() || host;
-    onSave({ name: finalName, url: trimmedUrl });
+    onSubmit();
   };
 
   return (
@@ -87,7 +73,7 @@ export function EditLinkDialog({ target, onClose, onSave, onDelete }: Props) {
           autoComplete="off"
           placeholder="https://example.com"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={(e) => onUrlChange(e.target.value)}
           required
           autoFocus
         />
@@ -101,7 +87,7 @@ export function EditLinkDialog({ target, onClose, onSave, onDelete }: Props) {
           autoComplete="off"
           placeholder="Defaults to the site's hostname"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => onNameChange(e.target.value)}
         />
 
         {error && (

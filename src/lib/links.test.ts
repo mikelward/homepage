@@ -4,6 +4,7 @@ import {
   STORAGE_KEY,
   isLinkEntry,
   parseLinks,
+  validateLinkForm,
 } from './links';
 
 describe('links', () => {
@@ -67,6 +68,40 @@ describe('links', () => {
         { id: 'b', name: 'B', url: 'https://b.test' },
       ];
       expect(parseLinks(JSON.stringify(links))).toEqual(links);
+    });
+  });
+
+  describe('validateLinkForm', () => {
+    it('rejects an empty URL', () => {
+      expect(validateLinkForm({ name: 'A', url: '' })).toEqual({
+        ok: false,
+        error: 'URL is required.',
+      });
+    });
+
+    it('rejects a URL that is not a valid http(s) URL', () => {
+      expect(validateLinkForm({ name: 'A', url: 'not-a-url' })).toEqual({
+        ok: false,
+        error: 'Enter a full URL, including https://',
+      });
+    });
+
+    it('defaults the name to the hostname when blank', () => {
+      expect(
+        validateLinkForm({ name: '', url: 'https://example.com/path' }),
+      ).toEqual({
+        ok: true,
+        values: { name: 'example.com', url: 'https://example.com/path' },
+      });
+    });
+
+    it('trims the name and the URL', () => {
+      expect(
+        validateLinkForm({ name: '  A  ', url: '  https://a.test  ' }),
+      ).toEqual({
+        ok: true,
+        values: { name: 'A', url: 'https://a.test' },
+      });
     });
   });
 });

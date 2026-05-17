@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { useAuth } from '../hooks/useAuth';
 import { useLinks } from '../hooks/useLinks';
-import type { LinkEntry } from '../lib/links';
+import { validateLinkForm, type LinkEntry } from '../lib/links';
 import { startSync } from '../lib/sync';
 import { EditLinkDialog, type EditTarget } from './EditLinkDialog';
 import { LinkTile } from './LinkTile';
@@ -28,6 +28,9 @@ export function Home() {
   const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [target, setTarget] = useState<EditTarget | null>(null);
+  const [name, setName] = useState('');
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   // Activation constraints keep clicks/taps on the tile and delete buttons
   // working normally — a drag only starts after a short hold or a few
@@ -45,13 +48,32 @@ export function Home() {
     return startSync(user.uid);
   }, [user]);
 
+  const openAddDialog = () => {
+    setName('');
+    setUrl('');
+    setError(null);
+    setTarget({ kind: 'add' });
+  };
+
+  const openEditDialog = (link: LinkEntry) => {
+    setName(link.name);
+    setUrl(link.url);
+    setError(null);
+    setTarget({ kind: 'edit', link });
+  };
+
   const closeDialog = () => setTarget(null);
 
-  const saveDialog = (values: { name: string; url: string }) => {
+  const submitDialog = () => {
+    const result = validateLinkForm({ name, url });
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
     if (target?.kind === 'edit') {
-      updateLink(target.link.id, values);
+      updateLink(target.link.id, result.values);
     } else {
-      addLink(values.name, values.url);
+      addLink(result.values.name, result.values.url);
     }
     closeDialog();
   };
@@ -102,14 +124,14 @@ export function Home() {
                 key={link.id}
                 link={link}
                 editing={editing}
-                onEdit={(l) => setTarget({ kind: 'edit', link: l })}
+                onEdit={openEditDialog}
                 onRemove={removeTile}
               />
             ))}
             <button
               type="button"
               className="home__add"
-              onClick={() => setTarget({ kind: 'add' })}
+              onClick={openAddDialog}
               aria-label="Add link"
             >
               +
@@ -120,8 +142,13 @@ export function Home() {
 
       <EditLinkDialog
         target={target}
+        name={name}
+        url={url}
+        error={error}
+        onNameChange={setName}
+        onUrlChange={setUrl}
+        onSubmit={submitDialog}
         onClose={closeDialog}
-        onSave={saveDialog}
         onDelete={target?.kind === 'edit' ? deleteFromDialog : undefined}
       />
     </main>

@@ -3,9 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { EditLinkDialog } from './EditLinkDialog';
 
-// happy-dom's HTMLDialogElement doesn't (yet) flip `.open` from
-// showModal() — stub the methods so React's render path doesn't throw,
-// and the dialog stays in the document for queries.
 beforeAll(() => {
   if (!HTMLDialogElement.prototype.showModal) {
     HTMLDialogElement.prototype.showModal = function () {
@@ -23,98 +20,75 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const baseProps = {
+  name: '',
+  url: '',
+  error: null,
+  onNameChange: vi.fn(),
+  onUrlChange: vi.fn(),
+  onSubmit: vi.fn(),
+  onClose: vi.fn(),
+};
+
 describe('EditLinkDialog', () => {
   it('renders nothing when target is null', () => {
     const { container } = render(
-      <EditLinkDialog target={null} onClose={vi.fn()} onSave={vi.fn()} />,
+      <EditLinkDialog {...baseProps} target={null} />,
     );
     expect(container).toBeEmptyDOMElement();
   });
 
   it('shows the Add title for an add target', () => {
-    render(
-      <EditLinkDialog
-        target={{ kind: 'add' }}
-        onClose={vi.fn()}
-        onSave={vi.fn()}
-      />,
-    );
+    render(<EditLinkDialog {...baseProps} target={{ kind: 'add' }} />);
     expect(screen.getByText('Add link')).toBeInTheDocument();
   });
 
-  it('seeds the form for an edit target', () => {
+  it('displays the seeded values for an edit target', () => {
     render(
       <EditLinkDialog
+        {...baseProps}
         target={{
           kind: 'edit',
           link: { id: 'a', name: 'Codex', url: 'https://chatgpt.com' },
         }}
-        onClose={vi.fn()}
-        onSave={vi.fn()}
+        name="Codex"
+        url="https://chatgpt.com"
       />,
     );
     expect(screen.getByLabelText('URL')).toHaveValue('https://chatgpt.com');
     expect(screen.getByLabelText(/Name/)).toHaveValue('Codex');
   });
 
-  it('rejects an invalid URL', async () => {
-    const user = userEvent.setup();
-    const onSave = vi.fn();
+  it('renders an error message when provided', () => {
     render(
       <EditLinkDialog
+        {...baseProps}
         target={{ kind: 'add' }}
-        onClose={vi.fn()}
-        onSave={onSave}
+        error="Enter a full URL"
       />,
     );
-    await user.type(screen.getByLabelText('URL'), 'not-a-url');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(onSave).not.toHaveBeenCalled();
-    expect(
-      screen.getByRole('alert'),
-    ).toHaveTextContent(/full URL/);
+    expect(screen.getByRole('alert')).toHaveTextContent(/full URL/);
   });
 
-  it('defaults name to the hostname when blank', async () => {
+  it('calls onSubmit when Save is clicked', async () => {
     const user = userEvent.setup();
-    const onSave = vi.fn();
+    const onSubmit = vi.fn();
     render(
       <EditLinkDialog
+        {...baseProps}
         target={{ kind: 'add' }}
-        onClose={vi.fn()}
-        onSave={onSave}
+        onSubmit={onSubmit}
       />,
     );
-    await user.type(screen.getByLabelText('URL'), 'https://example.com/path');
     await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(onSave).toHaveBeenCalledWith({
-      name: 'example.com',
-      url: 'https://example.com/path',
-    });
-  });
-
-  it('calls onSave with trimmed values', async () => {
-    const user = userEvent.setup();
-    const onSave = vi.fn();
-    render(
-      <EditLinkDialog
-        target={{ kind: 'add' }}
-        onClose={vi.fn()}
-        onSave={onSave}
-      />,
-    );
-    await user.type(screen.getByLabelText('URL'), '  https://a.test  ');
-    await user.type(screen.getByLabelText(/Name/), '  A  ');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(onSave).toHaveBeenCalledWith({ name: 'A', url: 'https://a.test' });
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   it('shows a Delete button only for edit targets when onDelete is provided', () => {
     const { rerender } = render(
       <EditLinkDialog
+        {...baseProps}
         target={{ kind: 'add' }}
-        onClose={vi.fn()}
-        onSave={vi.fn()}
         onDelete={vi.fn()}
       />,
     );
@@ -124,12 +98,11 @@ describe('EditLinkDialog', () => {
 
     rerender(
       <EditLinkDialog
+        {...baseProps}
         target={{
           kind: 'edit',
           link: { id: 'a', name: 'A', url: 'https://a.test' },
         }}
-        onClose={vi.fn()}
-        onSave={vi.fn()}
         onDelete={vi.fn()}
       />,
     );
