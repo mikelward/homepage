@@ -2,7 +2,7 @@
 
 ## Add CI and required merge gates, then let the weekly dependency PR use them
 
-The weekly dependency-update workflow (#44) landed with two deliberate gaps,
+The weekly npm-update workflow (#44) landed with two deliberate gaps,
 both stated in its comments: this repository has no CI workflow to dispatch
 against the weekly branch, and no required checks — so the workflow neither
 dispatches CI nor arms auto-merge (with no gate, arming would be
@@ -23,11 +23,11 @@ comprehensive automated review, required merge gates, and auto-merge.
       require branches up to date.
 - [ ] Enable auto-merge in repository settings (Settings → General → Pull
       Requests → Allow auto-merge).
-- [ ] Re-widen `dependency-update.yml` once the above exist: restore the
+- [ ] Re-widen `npm-update.yml` once the above exist: restore the
       `ci.yml` + `codex-review-check.yml` dispatches and the `actions: write`
       scope on the publish job, arm auto-merge (`gh pr merge --auto --rebase`)
       the way gedmap does, and update the PR-body wording plus
-      `.github/workflows/dependency-update.test.ts` — the "says on the PR that
+      `.github/workflows/npm-update.test.ts` — the "says on the PR that
       no CI will run there" and "uses only first-party actions" tests encode
       today's no-CI state on purpose.
 - [x] Align `.nvmrc` with `engines.node` — done in #46 (`.nvmrc` is now `24`).
