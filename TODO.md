@@ -9,16 +9,19 @@ dispatches CI nor arms auto-merge (with no gate, arming would be
 self-approval). The end state is the bar the sibling repos already meet:
 comprehensive automated review, required merge gates, and auto-merge.
 
-- [ ] `ci.yml` running the same suite the update job runs (`npm ci`, `lint`,
+- [x] `ci.yml` running the same suite the update job runs (`npm ci`, `lint`,
       `typecheck`, `test`, `build`) on `pull_request` and pushes to main, with
       `workflow_dispatch` taking a `pr` input so the weekly workflow can
       dispatch it against the branch it pushes — a `GITHUB_TOKEN`-authored PR
-      triggers nothing on its own. The docs-lane/`gate` shape from the shared
-      `mikelward/lanes` action is the sibling repos' pattern.
+      triggers nothing on its own. Uses the shared `mikelward/lanes` action's
+      docs/code classification, with the required check named `lanes` (the
+      sibling repos are mid-migration from an earlier `gate` name — see
+      mikelward/lanes#9 — so a brand-new consumer takes the new name
+      directly, with no `gate` duplicate to carry).
 - [ ] Codex review set — `codex-review.yml`, `codex-review-listener.yml`,
       `codex-review-check.yml` from mikelward/codex-review (its
       `docs/CONSUMER.md` explains the three load-bearing ruleset settings).
-- [ ] Ruleset on `main`: require the `gate` (or `ci`) check, the `codex`
+- [ ] Ruleset on `main`: require the `lanes` check, the `codex`
       status, and the Vercel deployment; require conversation resolution;
       require branches up to date.
 - [ ] Enable auto-merge in repository settings (Settings → General → Pull
