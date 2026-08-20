@@ -503,15 +503,33 @@ describe('npm-update workflow', () => {
       if (blockStart) blockIndent = blockStart[1].length;
     }
 
+    // Fifth finding, same PR: `run` isn't the only step key GitHub turns
+    // into an executed command line -- `shell:` is too. A custom shell
+    // value is a literal COMMAND TEMPLATE (e.g. `perl {0}`, `pwsh -command
+    // ". '{0}'"` -- verified against actions/runner's own
+    // ScriptHandlerHelpers.cs) with the script path substituted into it,
+    // so `shell: ${{ needs.job.outputs.command }}` hands an attacker the
+    // same class of control as `run: ${{ ... }}` does. Fixed by rejecting
+    // `shell` alongside `run`, rather than switching to an allowlist as
+    // suggested: the other step keys that could plausibly hold a bare
+    // expression (`if`, `id`, `name`, `continue-on-error`,
+    // `timeout-minutes`, `working-directory`) are genuinely inert --
+    // evaluated or read as data by the Actions runtime, never handed to a
+    // shell or used to build a command line -- so denylisting the two
+    // verified command-construction sinks is the precise fix, not a
+    // narrower one that happens to work today.
+    const DANGEROUS_KEYS = new Set(['run', 'shell']);
+
     // A line is a safe, GitHub-resolved mapping only if it is NOTHING BUT
     // `key: ${{ single-expression }}` (bash has no bare `word: value`
     // assignment syntax, so that shape is never shell content on its own),
-    // the key isn't `run`, AND the line isn't sitting inside some OTHER
-    // run: block's body where the shape means nothing.
+    // the key isn't one of the command-construction sinks above, AND the
+    // line isn't sitting inside some OTHER run: block's body where the
+    // shape means nothing.
     const isSafeMapping = (i: number): boolean => {
       if (insideRunBody[i]) return false;
       const m = /^\s+([\w-]+):\s*\$\{\{[^}]+\}\}\s*$/.exec(lines[i]);
-      return m !== null && m[1] !== 'run';
+      return m !== null && !DANGEROUS_KEYS.has(m[1]);
     };
 
     const stepsOrNeedsOffenders = lines.filter(
