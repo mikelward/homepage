@@ -441,113 +441,17 @@ describe('npm-update workflow', () => {
     expect(workflow).not.toContain('actions: write');
   });
 
-  it('routes steps/needs/default-branch expressions through a bare mapping, never inline in a run: script', () => {
-    // A zizmor template-injection finding, fixed once already: a `${{ }}`
-    // expression spliced directly into a run: script is plain string
-    // substitution before the shell ever runs. The fix routes each through
-    // a bare `key: ${{ expr }}` YAML mapping -- env:, a job's outputs:, or
-    // a step's with: -- and references it as a shell variable (or lets
-    // GitHub itself resolve it, for outputs/with:) instead. This locks that
-    // shape in so a future edit can't quietly put one back inline.
-    //
-    // Two real Codex findings on this exact test, both on the sibling
-    // homepage PR, both about the same underlying mistake: inferring
-    // safety from a line's TEXT SHAPE alone, without tracking where in the
-    // YAML that line actually sits.
-    //
-    // First finding: `run: ${{ expr }}` is a single-line run STEP whose
-    // entire body IS the substituted expression -- GitHub hands that text
-    // straight to the shell as the script to execute, so it is exactly the
-    // injection shape this test exists to catch, not a safe mapping. Fixed
-    // by rejecting the key name `run` specifically.
-    //
-    // Second finding: rejecting the `run` KEY isn't enough on its own --
-    // any line INSIDE a `run: |`/`run: >` block scalar's BODY is shell
-    // script content regardless of what it looks like, so a heredoc line
-    // that happens to read `command: ${{ needs.job.outputs.x }}` would
-    // still pass a text-shape-only check even with `run` excluded. Fixed
-    // by actually tracking block-scalar extent: every line indented more
-    // than the `run:` key (or blank) belongs to its body, the same way
-    // YAML itself decides where a block scalar ends, until a line at or
-    // below that indentation appears.
-    //
-    // Third finding, same PR: the block-start regex required `run:` to
-    // follow only whitespace, missing the equally common `- run: |` list-
-    // item shorthand for a step whose only key is `run:` (this fleet's own
-    // workflows use the single-line form of that shorthand, `- run: npm
-    // ci`, in multiple places) -- a block scalar written that way was
-    // never recognized as a block start at all, so its whole body fell
-    // outside insideRunBody. Fixed by allowing an optional `- ` before
-    // `run:` and measuring the reference indentation from wherever `run:`
-    // itself actually starts, dash included.
-    //
-    // Fourth finding, same PR: the block-start regex required end-of-line
-    // right after the scalar indicator/chomping marker, missing the
-    // equally valid `run: | # comment` shape -- YAML permits a trailing
-    // comment on the same line as a block-scalar header. Fixed by allowing
-    // an optional `# ...` tail before end-of-line.
-    const lines = workflow.split('\n');
-    const insideRunBody: boolean[] = new Array(lines.length).fill(false);
-    let blockIndent: number | null = null;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (blockIndent !== null) {
-        const indent = line.search(/\S/);
-        if (indent === -1 || indent > blockIndent) {
-          insideRunBody[i] = true;
-          continue;
-        }
-        blockIndent = null;
-      }
-      const blockStart = /^(\s*(?:-\s+)?)(?:['"])?run(?:['"])?:\s*[|>][-+0-9]*(?:\s+#.*)?\s*$/.exec(line);
-      if (blockStart) blockIndent = blockStart[1].length;
-    }
-
-    // Fifth finding, same PR: `run` isn't the only step key GitHub turns
-    // into an executed command line -- `shell:` is too. A custom shell
-    // value is a literal COMMAND TEMPLATE (e.g. `perl {0}`, `pwsh -command
-    // ". '{0}'"` -- verified against actions/runner's own
-    // ScriptHandlerHelpers.cs) with the script path substituted into it,
-    // so `shell: ${{ needs.job.outputs.command }}` hands an attacker the
-    // same class of control as `run: ${{ ... }}` does. Fixed by rejecting
-    // `shell` alongside `run`, rather than switching to an allowlist as
-    // suggested: the other step keys that could plausibly hold a bare
-    // expression (`if`, `id`, `name`, `continue-on-error`,
-    // `timeout-minutes`, `working-directory`) are genuinely inert --
-    // evaluated or read as data by the Actions runtime, never handed to a
-    // shell or used to build a command line -- so denylisting the two
-    // verified command-construction sinks is the precise fix, not a
-    // narrower one that happens to work today.
-    const DANGEROUS_KEYS = new Set(['run', 'shell']);
-
-    // Sixth finding, same PR: YAML allows a mapping key to be quoted
-    // (`'run': |`, `"shell": ...`), which GitHub's parser treats
-    // identically to the bare key -- so a key-name check has to strip
-    // optional matching quotes before comparing, both when detecting a
-    // run: block start and when judging whether a bare-mapping line's key
-    // is one of the dangerous ones.
-    const KEY_RE = /^\s+(?:['"])?([\w-]+)(?:['"])?:\s*\$\{\{[^}]+\}\}\s*$/;
-
-    // A line is a safe, GitHub-resolved mapping only if it is NOTHING BUT
-    // `key: ${{ single-expression }}` (bash has no bare `word: value`
-    // assignment syntax, so that shape is never shell content on its own),
-    // the key isn't one of the command-construction sinks above, AND the
-    // line isn't sitting inside some OTHER run: block's body where the
-    // shape means nothing.
-    const isSafeMapping = (i: number): boolean => {
-      if (insideRunBody[i]) return false;
-      const m = KEY_RE.exec(lines[i]);
-      return m !== null && !DANGEROUS_KEYS.has(m[1]);
-    };
-
-    const stepsOrNeedsOffenders = lines.filter(
-      (line, i) => /\$\{\{\s*(steps\.|needs\.)/.test(line) && !isSafeMapping(i),
-    );
-    expect(stepsOrNeedsOffenders).toEqual([]);
-
-    const defaultBranchOffenders = lines.filter(
-      (line, i) => line.includes('github.event.repository.default_branch') && !isSafeMapping(i),
-    );
-    expect(defaultBranchOffenders).toEqual([]);
-  });
+  // The hand-rolled "no expression is spliced into a run: script" check that
+  // used to live here is gone. It went through six rounds of real Codex
+  // findings (run: as a single-line step, block-scalar body extent, the
+  // `- run: |` list-item shorthand, a trailing comment on the block header,
+  // `shell:` as a second command-construction sink, and quoted mapping
+  // keys) — each one a genuine gap in a hand-rolled regex trying to do
+  // real structural YAML parsing without a real parser. zizmor's
+  // template-injection audit (.github/workflows/zizmor.yml) does this job
+  // natively, backed by a real YAML parser: verified directly against every
+  // shape the six rounds above found, including the one the regex never
+  // caught (an anchored `- run: &script |`), and it correctly does not flag
+  // the safe env:-indirection pattern. See mikelward/zizmor.yml's own AGENTS
+  // note and TODO.md for making it a required check.
 });
