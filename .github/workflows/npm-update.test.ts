@@ -450,13 +450,22 @@ describe('npm-update workflow', () => {
     // GitHub itself resolve it, for outputs/with:) instead. This locks that
     // shape in so a future edit can't quietly put one back inline.
     //
-    // A line that is NOTHING BUT `key: ${{ single-expression }}` is always
-    // one of those safe, GitHub-resolved mappings -- never a shell run:
-    // line, since bash has no bare `word: value` assignment syntax. That is
-    // deliberately case- and key-name-agnostic: env: keys are
-    // conventionally uppercase here, but a job's `outputs:` and a step's
-    // `with:` keys (`changed:`, `ref:`, ...) are not, and are just as safe.
-    const bareMapping = (line: string) => /^\s+[\w-]+:\s*\$\{\{[^}]+\}\}\s*$/.test(line);
+    // A line that is NOTHING BUT `key: ${{ single-expression }}` is USUALLY
+    // one of those safe, GitHub-resolved mappings -- env:, a job's
+    // outputs:, or a step's with: -- never a shell run: line, since bash
+    // has no bare `word: value` assignment syntax. That is deliberately
+    // case- and key-name-agnostic: env: keys are conventionally uppercase
+    // here, but a job's `outputs:` and a step's `with:` keys (`changed:`,
+    // `ref:`, ...) are not, and are just as safe. `run:` is the one
+    // exception: `run: ${{ expr }}` is a single-line run STEP whose entire
+    // body IS the substituted expression -- GitHub hands that text straight
+    // to the shell as the script to execute, so it is exactly the
+    // injection shape this test exists to catch, not a safe mapping (a
+    // real Codex finding on this exact test).
+    const bareMapping = (line: string) => {
+      const m = /^\s+([\w-]+):\s*\$\{\{[^}]+\}\}\s*$/.exec(line);
+      return m !== null && m[1] !== 'run';
+    };
 
     const stepsOrNeedsOffenders = workflow
       .split('\n')
