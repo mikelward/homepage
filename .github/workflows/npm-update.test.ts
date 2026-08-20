@@ -470,6 +470,16 @@ describe('npm-update workflow', () => {
     // than the `run:` key (or blank) belongs to its body, the same way
     // YAML itself decides where a block scalar ends, until a line at or
     // below that indentation appears.
+    //
+    // Third finding, same PR: the block-start regex required `run:` to
+    // follow only whitespace, missing the equally common `- run: |` list-
+    // item shorthand for a step whose only key is `run:` (this fleet's own
+    // workflows use the single-line form of that shorthand, `- run: npm
+    // ci`, in multiple places) -- a block scalar written that way was
+    // never recognized as a block start at all, so its whole body fell
+    // outside insideRunBody. Fixed by allowing an optional `- ` before
+    // `run:` and measuring the reference indentation from wherever `run:`
+    // itself actually starts, dash included.
     const lines = workflow.split('\n');
     const insideRunBody: boolean[] = new Array(lines.length).fill(false);
     let blockIndent: number | null = null;
@@ -483,7 +493,7 @@ describe('npm-update workflow', () => {
         }
         blockIndent = null;
       }
-      const blockStart = /^(\s*)run:\s*[|>][-+0-9]*\s*$/.exec(line);
+      const blockStart = /^(\s*(?:-\s+)?)run:\s*[|>][-+0-9]*\s*$/.exec(line);
       if (blockStart) blockIndent = blockStart[1].length;
     }
 
