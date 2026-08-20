@@ -450,32 +450,62 @@ describe('npm-update workflow', () => {
     // GitHub itself resolve it, for outputs/with:) instead. This locks that
     // shape in so a future edit can't quietly put one back inline.
     //
-    // A line that is NOTHING BUT `key: ${{ single-expression }}` is USUALLY
-    // one of those safe, GitHub-resolved mappings -- env:, a job's
-    // outputs:, or a step's with: -- never a shell run: line, since bash
-    // has no bare `word: value` assignment syntax. That is deliberately
-    // case- and key-name-agnostic: env: keys are conventionally uppercase
-    // here, but a job's `outputs:` and a step's `with:` keys (`changed:`,
-    // `ref:`, ...) are not, and are just as safe. `run:` is the one
-    // exception: `run: ${{ expr }}` is a single-line run STEP whose entire
-    // body IS the substituted expression -- GitHub hands that text straight
-    // to the shell as the script to execute, so it is exactly the
-    // injection shape this test exists to catch, not a safe mapping (a
-    // real Codex finding on this exact test).
-    const bareMapping = (line: string) => {
-      const m = /^\s+([\w-]+):\s*\$\{\{[^}]+\}\}\s*$/.exec(line);
+    // Two real Codex findings on this exact test, both on the sibling
+    // homepage PR, both about the same underlying mistake: inferring
+    // safety from a line's TEXT SHAPE alone, without tracking where in the
+    // YAML that line actually sits.
+    //
+    // First finding: `run: ${{ expr }}` is a single-line run STEP whose
+    // entire body IS the substituted expression -- GitHub hands that text
+    // straight to the shell as the script to execute, so it is exactly the
+    // injection shape this test exists to catch, not a safe mapping. Fixed
+    // by rejecting the key name `run` specifically.
+    //
+    // Second finding: rejecting the `run` KEY isn't enough on its own --
+    // any line INSIDE a `run: |`/`run: >` block scalar's BODY is shell
+    // script content regardless of what it looks like, so a heredoc line
+    // that happens to read `command: ${{ needs.job.outputs.x }}` would
+    // still pass a text-shape-only check even with `run` excluded. Fixed
+    // by actually tracking block-scalar extent: every line indented more
+    // than the `run:` key (or blank) belongs to its body, the same way
+    // YAML itself decides where a block scalar ends, until a line at or
+    // below that indentation appears.
+    const lines = workflow.split('\n');
+    const insideRunBody: boolean[] = new Array(lines.length).fill(false);
+    let blockIndent: number | null = null;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (blockIndent !== null) {
+        const indent = line.search(/\S/);
+        if (indent === -1 || indent > blockIndent) {
+          insideRunBody[i] = true;
+          continue;
+        }
+        blockIndent = null;
+      }
+      const blockStart = /^(\s*)run:\s*[|>][-+0-9]*\s*$/.exec(line);
+      if (blockStart) blockIndent = blockStart[1].length;
+    }
+
+    // A line is a safe, GitHub-resolved mapping only if it is NOTHING BUT
+    // `key: ${{ single-expression }}` (bash has no bare `word: value`
+    // assignment syntax, so that shape is never shell content on its own),
+    // the key isn't `run`, AND the line isn't sitting inside some OTHER
+    // run: block's body where the shape means nothing.
+    const isSafeMapping = (i: number): boolean => {
+      if (insideRunBody[i]) return false;
+      const m = /^\s+([\w-]+):\s*\$\{\{[^}]+\}\}\s*$/.exec(lines[i]);
       return m !== null && m[1] !== 'run';
     };
 
-    const stepsOrNeedsOffenders = workflow
-      .split('\n')
-      .filter((line) => /\$\{\{\s*(steps\.|needs\.)/.test(line) && !bareMapping(line));
+    const stepsOrNeedsOffenders = lines.filter(
+      (line, i) => /\$\{\{\s*(steps\.|needs\.)/.test(line) && !isSafeMapping(i),
+    );
     expect(stepsOrNeedsOffenders).toEqual([]);
 
-    const defaultBranchOffenders = workflow
-      .split('\n')
-      .filter((line) => line.includes('github.event.repository.default_branch'))
-      .filter((line) => !bareMapping(line));
+    const defaultBranchOffenders = lines.filter(
+      (line, i) => line.includes('github.event.repository.default_branch') && !isSafeMapping(i),
+    );
     expect(defaultBranchOffenders).toEqual([]);
   });
 });
