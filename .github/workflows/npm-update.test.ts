@@ -499,7 +499,7 @@ describe('npm-update workflow', () => {
         }
         blockIndent = null;
       }
-      const blockStart = /^(\s*(?:-\s+)?)run:\s*[|>][-+0-9]*(?:\s+#.*)?\s*$/.exec(line);
+      const blockStart = /^(\s*(?:-\s+)?)(?:['"])?run(?:['"])?:\s*[|>][-+0-9]*(?:\s+#.*)?\s*$/.exec(line);
       if (blockStart) blockIndent = blockStart[1].length;
     }
 
@@ -520,6 +520,14 @@ describe('npm-update workflow', () => {
     // narrower one that happens to work today.
     const DANGEROUS_KEYS = new Set(['run', 'shell']);
 
+    // Sixth finding, same PR: YAML allows a mapping key to be quoted
+    // (`'run': |`, `"shell": ...`), which GitHub's parser treats
+    // identically to the bare key -- so a key-name check has to strip
+    // optional matching quotes before comparing, both when detecting a
+    // run: block start and when judging whether a bare-mapping line's key
+    // is one of the dangerous ones.
+    const KEY_RE = /^\s+(?:['"])?([\w-]+)(?:['"])?:\s*\$\{\{[^}]+\}\}\s*$/;
+
     // A line is a safe, GitHub-resolved mapping only if it is NOTHING BUT
     // `key: ${{ single-expression }}` (bash has no bare `word: value`
     // assignment syntax, so that shape is never shell content on its own),
@@ -528,7 +536,7 @@ describe('npm-update workflow', () => {
     // shape means nothing.
     const isSafeMapping = (i: number): boolean => {
       if (insideRunBody[i]) return false;
-      const m = /^\s+([\w-]+):\s*\$\{\{[^}]+\}\}\s*$/.exec(lines[i]);
+      const m = KEY_RE.exec(lines[i]);
       return m !== null && !DANGEROUS_KEYS.has(m[1]);
     };
 
