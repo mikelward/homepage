@@ -480,6 +480,12 @@ describe('npm-update workflow', () => {
     // outside insideRunBody. Fixed by allowing an optional `- ` before
     // `run:` and measuring the reference indentation from wherever `run:`
     // itself actually starts, dash included.
+    //
+    // Fourth finding, same PR: the block-start regex required end-of-line
+    // right after the scalar indicator/chomping marker, missing the
+    // equally valid `run: | # comment` shape -- YAML permits a trailing
+    // comment on the same line as a block-scalar header. Fixed by allowing
+    // an optional `# ...` tail before end-of-line.
     const lines = workflow.split('\n');
     const insideRunBody: boolean[] = new Array(lines.length).fill(false);
     let blockIndent: number | null = null;
@@ -493,7 +499,7 @@ describe('npm-update workflow', () => {
         }
         blockIndent = null;
       }
-      const blockStart = /^(\s*(?:-\s+)?)run:\s*[|>][-+0-9]*\s*$/.exec(line);
+      const blockStart = /^(\s*(?:-\s+)?)run:\s*[|>][-+0-9]*(?:\s+#.*)?\s*$/.exec(line);
       if (blockStart) blockIndent = blockStart[1].length;
     }
 
